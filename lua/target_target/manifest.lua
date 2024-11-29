@@ -1,17 +1,16 @@
 -- lua/target_target/manifest.lua
 
--- lua/target_target/manifest.lua
 local utils = require("target_target.utils")
 local Path = require("plenary.path")
-local Job = require("plenary.job") -- Added plenary.job for asynchronous execution
+local Job = require("plenary.job")
 local data_dir = utils.get_data_dir()
 
 local M = {}
 
--- Function to update the manifest by calling R code asynchronously
 function M.update_manifest()
-	-- Command to run in R
-	local r_command = "targets::tar_manifest() |> jsonlite::toJSON()"
+	-- Updated R command
+	local r_command = 'targets::tar_manifest(fields = c("name", "command")) |> jsonlite::toJSON(auto_unbox = TRUE)'
+
 	-- Use plenary.job to run the R command asynchronously
 	Job:new({
 		command = "Rscript",
@@ -37,14 +36,19 @@ function M.update_manifest()
 	}):start()
 end
 
--- Function to read the manifest
 function M.read_manifest()
 	local manifest_path = Path:new(data_dir, "manifest.json")
 	if not manifest_path:exists() then
 		return nil
 	end
 	local manifest_json = manifest_path:read()
-	return vim.json.decode(manifest_json)
+	-- Decode the JSON, ensuring any errors are caught
+	local ok, manifest_data = pcall(vim.json.decode, manifest_json)
+	if not ok then
+		vim.notify("Error parsing manifest JSON: " .. manifest_data, vim.log.levels.ERROR)
+		return nil
+	end
+	return manifest_data
 end
 
 return M
