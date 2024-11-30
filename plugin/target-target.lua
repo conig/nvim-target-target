@@ -2,7 +2,7 @@
 
 -- Set up an autocommand to detect when a _targets.R file is saved
 vim.api.nvim_create_autocmd("BufWritePost", {
-    pattern = "_targets.R",
+    pattern = "_targets.[rR]",
     callback = function()
         require("target_target.manifest").update_manifest()
     end,
