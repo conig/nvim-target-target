@@ -9,7 +9,7 @@ local M = {}
 
 function M.update_manifest()
 	-- Updated R command
-	local r_command = 'targets::tar_manifest(fields = c("name", "command")) |> jsonlite::toJSON(auto_unbox = TRUE)'
+	local r_command = 'x <- targets::tar_manifest(fields = c("name", "command")); x |> jsonlite::toJSON(auto_unbox = TRUE)'
 
 	-- Use plenary.job to run the R command asynchronously
 	Job:new({
