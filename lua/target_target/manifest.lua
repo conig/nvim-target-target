@@ -8,32 +8,36 @@ local data_dir = utils.get_data_dir()
 local M = {}
 
 function M.update_manifest()
-	-- Updated R command
-	local r_command = 'x <- targets::tar_manifest(fields = c("name", "command")); x |> jsonlite::toJSON(auto_unbox = TRUE)'
+    -- Define the path where the manifest.json will be saved
+    local manifest_path = Path:new(data_dir, "manifest.json"):absolute()
 
-	-- Use plenary.job to run the R command asynchronously
-	Job:new({
-		command = "Rscript",
-		args = { "-e", r_command },
-		on_exit = function(j, return_val)
-			if return_val == 0 then
-				local manifest_json = table.concat(j:result(), "\n")
-				-- Save the manifest to a file in the data directory
-				local manifest_path = Path:new(data_dir, "manifest.json")
-				manifest_path:write(manifest_json, "w")
-				-- Notify the user asynchronously
-				vim.schedule(function()
-					print("Manifest updated successfully.")
-				end)
-			else
-				local stderr = table.concat(j:stderr_result(), "\n")
-				-- Notify the user of the error asynchronously
-				vim.schedule(function()
-					vim.notify("Error updating manifest: " .. stderr, vim.log.levels.ERROR)
-				end)
-			end
-		end,
-	}):start()
+    -- Construct the R command to write JSON directly to the file
+    local r_command = string.format([[
+        library(targets)
+        library(jsonlite)
+        x <- tar_manifest(fields = c("name", "command"))
+        jsonlite::toJSON(x, auto_unbox = TRUE) |> writeLines("%s")
+    ]], manifest_path)
+
+    -- Use plenary.job to run the R command asynchronously
+    Job:new({
+        command = "Rscript",
+        args = { "--quiet", "-e", r_command },
+        on_exit = function(j, return_val)
+            if return_val == 0 then
+                -- Notify the user asynchronously
+                vim.schedule(function()
+                    print("Manifest updated successfully.")
+                end)
+            else
+                local stderr = table.concat(j:stderr_result(), "\n")
+                -- Notify the user of the error asynchronously
+                vim.schedule(function()
+                    vim.notify("Error updating manifest: " .. stderr, vim.log.levels.ERROR)
+                end)
+            end
+        end,
+    }):start()
 end
 
 function M.read_manifest()
