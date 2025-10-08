@@ -4,7 +4,7 @@
 vim.api.nvim_create_autocmd("BufWritePost", {
     pattern = {
         "_targets.[rR]",
-        "**/_target_pipelines/*",
+        "*_target_pipelines/*",
     },
     callback = function()
         require("target_target.manifest").update_manifest()
